@@ -249,6 +249,22 @@ const App = () => {
   const selectedGroup =
     groups.find((group) => group.id === selectedGroupId) ?? null;
 
+  if (!rootPath) {
+    return (
+      <div className="min-h-screen bg-background text-foreground">
+        <div className="mx-auto flex min-h-screen max-w-2xl flex-col items-center justify-center px-6 text-center">
+          <h1 className="text-4xl font-semibold">Env-shelf</h1>
+          <p className="mt-3 text-base text-muted-foreground">
+            Elige una carpeta para encontrar y editar tus archivos .env.
+          </p>
+          <div className="mt-6">
+            <Button onClick={handleSelectFolder}>Select folder</Button>
+          </div>
+        </div>
+      </div>
+    );
+  }
+
   return (
     <div className="min-h-screen bg-background text-foreground overflow-hidden">
       <header className="flex items-center justify-between border-b border-border px-6 py-4">
@@ -275,7 +291,7 @@ const App = () => {
       </header>
 
       <div className="flex h-[calc(100vh-84px)] overflow-hidden">
-        <aside className="w-72 border-r border-border p-4 overflow-x-hidden overflow-y-scroll">
+        <aside className="w-72 border-r border-border p-4 overflow-x-hidden overflow-y-auto">
           <div className="mb-4 flex items-center justify-between">
             <h2 className="text-sm font-semibold uppercase tracking-wide text-muted-foreground">
               Projects
