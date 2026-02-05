@@ -3,7 +3,6 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Textarea } from "@/components/ui/textarea";
-import { Toggle } from "@/components/ui/toggle";
 
 import { Switch } from "@/components/ui/switch";
 import {
@@ -65,7 +64,7 @@ const initialState: AppState = {
   rawText: "",
   activeTab: "table",
   maskValues: true,
-  createBackup: true,
+  createBackup: false,
   searchKey: "",
   statusMessage: null,
 };
@@ -374,11 +373,6 @@ const App = () => {
             <div className="mb-4 flex items-center justify-between">
               <div>
                 <h3 className="text-lg font-semibold">Editor</h3>
-                {/* <p className="text-sm text-muted-foreground">
-                  {selectedFile
-                    ? selectedFile.absolutePath
-                    : "Select an env file to edit."}
-                </p> */}
               </div>
               <div className="flex items-center gap-2">
                 <section className="flex flex-row items-center gap-2">
@@ -393,17 +387,18 @@ const App = () => {
                     }}
                   ></Switch>
                 </section>
-                <Toggle
-                  pressed={createBackup}
-                  onPressedChange={(value) =>
-                    dispatch({
-                      type: "patch",
-                      patch: { createBackup: value },
-                    })
-                  }
-                >
-                  Create backup
-                </Toggle>
+                <section className="flex flex-row items-center gap-2">
+                  <p>Backup</p>
+                  <Switch
+                    checked={createBackup}
+                    onCheckedChange={(value) => {
+                      dispatch({
+                        type: "patch",
+                        patch: { createBackup: value },
+                      });
+                    }}
+                  ></Switch>
+                </section>
 
                 <Button
                   variant="outline"
