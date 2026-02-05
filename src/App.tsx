@@ -152,6 +152,7 @@ const App = () => {
     const stored = localStorage.getItem(LOCAL_STORAGE_KEY);
     if (stored) {
       dispatch({ type: "patch", patch: { rootPath: stored } });
+      void handleScan(stored);
     }
   }, []);
 
@@ -169,6 +170,10 @@ const App = () => {
     try {
       const result = await scanEnvFiles(path);
       dispatch({ type: "scanSuccess", groups: result.groups });
+      const firstGroup = result.groups[0];
+      if (firstGroup) {
+        await handleSelectGroup(firstGroup);
+      }
     } catch (error) {
       const message = error instanceof Error ? error.message : "Scan failed";
       dispatch({ type: "scanError", message });
@@ -360,17 +365,6 @@ const App = () => {
                 </p> */}
               </div>
               <div className="flex items-center gap-2">
-                <Toggle
-                  pressed={createBackup}
-                  onPressedChange={(value) =>
-                    dispatch({
-                      type: "patch",
-                      patch: { createBackup: value },
-                    })
-                  }
-                >
-                  Create backup
-                </Toggle>
                 <section className="flex flex-row items-center gap-2">
                   <p>{maskValues ? "Hide" : "Show"} values</p>
                   <Switch
@@ -383,6 +377,17 @@ const App = () => {
                     }}
                   ></Switch>
                 </section>
+                <Toggle
+                  pressed={createBackup}
+                  onPressedChange={(value) =>
+                    dispatch({
+                      type: "patch",
+                      patch: { createBackup: value },
+                    })
+                  }
+                >
+                  Create backup
+                </Toggle>
 
                 <Button
                   variant="outline"
@@ -395,6 +400,7 @@ const App = () => {
                   variant="accent"
                   onClick={handleSave}
                   disabled={!selectedFile}
+                  className="bg-green-500 text-black"
                 >
                   Save
                 </Button>
