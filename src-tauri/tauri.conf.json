@@ -1,0 +1,35 @@
+{
+  "build": {
+    "beforeDevCommand": "pnpm web:dev",
+    "beforeBuildCommand": "pnpm web:build",
+    "devPath": "http://localhost:1420",
+    "distDir": "../dist"
+  },
+  "package": {
+    "productName": "EnvShelf",
+    "version": "0.1.0"
+  },
+  "tauri": {
+    "allowlist": {
+      "dialog": {
+        "open": true
+      }
+    },
+    "windows": [
+      {
+        "title": "EnvShelf",
+        "width": 1200,
+        "height": 800
+      }
+    ],
+    "security": {
+      "csp": null
+    },
+    "bundle": {
+      "active": true,
+      "targets": "all",
+      "identifier": "com.envshelf.app",
+      "icon": ["icons/icon.png"]
+    }
+  }
+}
