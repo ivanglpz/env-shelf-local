@@ -8,7 +8,6 @@ import { Switch } from "@/components/ui/switch";
 import {
   diffKv,
   findDuplicateKeys,
-  linesToRaw,
   listKvLines,
   parseRawToLines,
   removeKvKey,
@@ -20,110 +19,12 @@ import {
   scanEnvFiles,
   writeEnvFile,
 } from "@/lib/tauri";
-import type { EnvDocument, EnvFileRef, EnvLine, ProjectGroup } from "@/types";
+import { appReducer, initialState } from "@/state/reducer";
+import type { EnvFileRef, EnvLine, ProjectGroup } from "@/types";
 import { open } from "@tauri-apps/api/dialog";
 import { FolderOpen, Plus, Save, Trash2 } from "lucide-react";
 import * as React from "react";
 const LOCAL_STORAGE_KEY = "envshelf:lastRoot";
-
-type ScanState = "idle" | "scanning" | "done" | "error";
-
-type AppState = {
-  rootPath: string | null;
-  scanState: ScanState;
-  groups: ProjectGroup[];
-  selectedGroupId: string | null;
-  selectedFile: EnvFileRef | null;
-  document: EnvDocument | null;
-  originalLines: EnvLine[];
-  rawText: string;
-  activeTab: string;
-  maskValues: boolean;
-  createBackup: boolean;
-  searchKey: string;
-  statusMessage: string | null;
-};
-
-type AppAction =
-  | { type: "patch"; patch: Partial<AppState> }
-  | { type: "scanStart" }
-  | { type: "scanSuccess"; groups: ProjectGroup[] }
-  | { type: "scanError"; message: string }
-  | { type: "scanCanceled" }
-  | { type: "openFileSuccess"; file: EnvFileRef; document: EnvDocument }
-  | { type: "updateDocumentLines"; lines: EnvLine[] }
-  | { type: "setRawText"; rawText: string; lines?: EnvLine[] };
-
-const initialState: AppState = {
-  rootPath: null,
-  scanState: "idle",
-  groups: [],
-  selectedGroupId: null,
-  selectedFile: null,
-  document: null,
-  originalLines: [],
-  rawText: "",
-  activeTab: "table",
-  maskValues: true,
-  createBackup: false,
-  searchKey: "",
-  statusMessage: null,
-};
-
-const appReducer = (state: AppState, action: AppAction): AppState => {
-  switch (action.type) {
-    case "patch":
-      return { ...state, ...action.patch };
-    case "scanStart":
-      return {
-        ...state,
-        scanState: "scanning",
-        statusMessage: "Scanning for .env files...",
-      };
-    case "scanSuccess":
-      return {
-        ...state,
-        groups: action.groups,
-        selectedGroupId: action.groups[0]?.id ?? null,
-        selectedFile: null,
-        document: null,
-        scanState: "done",
-        statusMessage: `Found ${action.groups.length} project group(s).`,
-      };
-    case "scanError":
-      return { ...state, scanState: "error", statusMessage: action.message };
-    case "scanCanceled":
-      return { ...state, scanState: "idle", statusMessage: "Scan canceled." };
-    case "openFileSuccess":
-      return {
-        ...state,
-        selectedFile: action.file,
-        document: action.document,
-        originalLines: action.document.lines,
-        rawText: linesToRaw(action.document.lines),
-        activeTab: "table",
-        statusMessage: `Loaded ${action.file.fileName}`,
-      };
-    case "updateDocumentLines":
-      if (!state.document) return state;
-      return {
-        ...state,
-        document: { ...state.document, lines: action.lines },
-        rawText: linesToRaw(action.lines),
-      };
-    case "setRawText":
-      if (state.document && action.lines) {
-        return {
-          ...state,
-          rawText: action.rawText,
-          document: { ...state.document, lines: action.lines },
-        };
-      }
-      return { ...state, rawText: action.rawText };
-    default:
-      return state;
-  }
-};
 
 const App = () => {
   const [state, dispatch] = React.useReducer(appReducer, initialState);
@@ -502,11 +403,17 @@ const App = () => {
                               });
                               return;
                             }
-                            const newKey = rawKey.toUpperCase().replace(/\s+/g, "_");
+                            const newKey = rawKey
+                              .toUpperCase()
+                              .replace(/\s+/g, "_");
                             updateDocumentLines(
                               document.lines.map((currentLine) =>
                                 currentLine === line
-                                  ? { ...currentLine, key: newKey, raw: undefined }
+                                  ? {
+                                      ...currentLine,
+                                      key: newKey,
+                                      raw: undefined,
+                                    }
                                   : currentLine,
                               ),
                             );
