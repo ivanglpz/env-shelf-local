@@ -27,29 +27,127 @@ const LOCAL_STORAGE_KEY = "envshelf:lastRoot";
 
 type ScanState = "idle" | "scanning" | "done" | "error";
 
+type AppState = {
+  rootPath: string | null;
+  scanState: ScanState;
+  groups: ProjectGroup[];
+  selectedGroupId: string | null;
+  selectedFile: EnvFileRef | null;
+  document: EnvDocument | null;
+  originalLines: EnvLine[];
+  rawText: string;
+  activeTab: string;
+  maskValues: boolean;
+  createBackup: boolean;
+  searchKey: string;
+  statusMessage: string | null;
+};
+
+type AppAction =
+  | { type: "patch"; patch: Partial<AppState> }
+  | { type: "scanStart" }
+  | { type: "scanSuccess"; groups: ProjectGroup[] }
+  | { type: "scanError"; message: string }
+  | { type: "scanCanceled" }
+  | { type: "openFileSuccess"; file: EnvFileRef; document: EnvDocument }
+  | { type: "updateDocumentLines"; lines: EnvLine[] }
+  | { type: "setRawText"; rawText: string; lines?: EnvLine[] };
+
+const initialState: AppState = {
+  rootPath: null,
+  scanState: "idle",
+  groups: [],
+  selectedGroupId: null,
+  selectedFile: null,
+  document: null,
+  originalLines: [],
+  rawText: "",
+  activeTab: "table",
+  maskValues: true,
+  createBackup: true,
+  searchKey: "",
+  statusMessage: null,
+};
+
+const appReducer = (state: AppState, action: AppAction): AppState => {
+  switch (action.type) {
+    case "patch":
+      return { ...state, ...action.patch };
+    case "scanStart":
+      return {
+        ...state,
+        scanState: "scanning",
+        statusMessage: "Scanning for .env files...",
+      };
+    case "scanSuccess":
+      return {
+        ...state,
+        groups: action.groups,
+        selectedGroupId: action.groups[0]?.id ?? null,
+        selectedFile: null,
+        document: null,
+        scanState: "done",
+        statusMessage: `Found ${action.groups.length} project group(s).`,
+      };
+    case "scanError":
+      return { ...state, scanState: "error", statusMessage: action.message };
+    case "scanCanceled":
+      return { ...state, scanState: "idle", statusMessage: "Scan canceled." };
+    case "openFileSuccess":
+      return {
+        ...state,
+        selectedFile: action.file,
+        document: action.document,
+        originalLines: action.document.lines,
+        rawText: linesToRaw(action.document.lines),
+        activeTab: "table",
+        statusMessage: `Loaded ${action.file.fileName}`,
+      };
+    case "updateDocumentLines":
+      if (!state.document) return state;
+      return {
+        ...state,
+        document: { ...state.document, lines: action.lines },
+        rawText: linesToRaw(action.lines),
+      };
+    case "setRawText":
+      if (state.document && action.lines) {
+        return {
+          ...state,
+          rawText: action.rawText,
+          document: { ...state.document, lines: action.lines },
+        };
+      }
+      return { ...state, rawText: action.rawText };
+    default:
+      return state;
+  }
+};
+
 const App = () => {
-  const [rootPath, setRootPath] = React.useState<string | null>(null);
-  const [scanState, setScanState] = React.useState<ScanState>("idle");
-  const [groups, setGroups] = React.useState<ProjectGroup[]>([]);
-  const [selectedGroupId, setSelectedGroupId] = React.useState<string | null>(
-    null,
-  );
-  const [selectedFile, setSelectedFile] = React.useState<EnvFileRef | null>(
-    null,
-  );
-  const [document, setDocument] = React.useState<EnvDocument | null>(null);
-  const [originalLines, setOriginalLines] = React.useState<EnvLine[]>([]);
-  const [rawText, setRawText] = React.useState<string>("");
-  const [activeTab, setActiveTab] = React.useState<string>("table");
-  const [maskValues, setMaskValues] = React.useState<boolean>(true);
-  const [createBackup, setCreateBackup] = React.useState<boolean>(true);
-  const [searchKey, setSearchKey] = React.useState<string>("");
-  const [statusMessage, setStatusMessage] = React.useState<string | null>(null);
+  const [state, dispatch] = React.useReducer(appReducer, initialState);
+  const {
+    rootPath,
+    scanState,
+    groups,
+    selectedGroupId,
+    selectedFile,
+    document,
+    originalLines,
+    rawText,
+    activeTab,
+    maskValues,
+    createBackup,
+    searchKey,
+    statusMessage,
+  } = state;
 
   React.useEffect(() => {
     const stored = localStorage.getItem(LOCAL_STORAGE_KEY);
+    console.log(stored);
+
     if (stored) {
-      setRootPath(stored);
+      dispatch({ type: "patch", patch: { rootPath: stored } });
     }
   }, []);
 
@@ -57,61 +155,57 @@ const App = () => {
     const selected = await open({ directory: true, multiple: false });
     if (typeof selected === "string") {
       localStorage.setItem(LOCAL_STORAGE_KEY, selected);
-      setRootPath(selected);
+      dispatch({ type: "patch", patch: { rootPath: selected } });
       await handleScan(selected);
     }
   };
 
   const handleScan = async (path: string) => {
-    setScanState("scanning");
-    setStatusMessage("Scanning for .env files...");
+    dispatch({ type: "scanStart" });
     try {
       const result = await scanEnvFiles(path);
-      setGroups(result.groups);
-      setSelectedGroupId(result.groups[0]?.id ?? null);
-      setSelectedFile(null);
-      setDocument(null);
-      setScanState("done");
-      setStatusMessage(`Found ${result.groups.length} project group(s).`);
+      dispatch({ type: "scanSuccess", groups: result.groups });
     } catch (error) {
       const message = error instanceof Error ? error.message : "Scan failed";
-      setScanState("error");
-      setStatusMessage(message);
+      dispatch({ type: "scanError", message });
     }
   };
 
   const handleCancelScan = async () => {
     await cancelScan();
-    setScanState("idle");
-    setStatusMessage("Scan canceled.");
+    dispatch({ type: "scanCanceled" });
   };
 
   const handleOpenFile = async (file: EnvFileRef) => {
     try {
       const doc = await readEnvFile(file.absolutePath);
-      setSelectedFile(file);
-      setDocument(doc);
-      setOriginalLines(doc.lines);
-      setRawText(linesToRaw(doc.lines));
-      setActiveTab("table");
-      setStatusMessage(`Loaded ${file.fileName}`);
+      dispatch({ type: "openFileSuccess", file, document: doc });
     } catch (error) {
       const message = error instanceof Error ? error.message : "Read failed";
-      setStatusMessage(message);
+      dispatch({ type: "patch", patch: { statusMessage: message } });
+    }
+  };
+
+  const handleSelectGroup = async (group: ProjectGroup) => {
+    dispatch({ type: "patch", patch: { selectedGroupId: group.id } });
+    const firstFile = group.envFiles[0];
+    if (firstFile) {
+      await handleOpenFile(firstFile);
     }
   };
 
   const updateDocumentLines = (lines: EnvLine[]) => {
     if (!document) return;
-    setDocument({ ...document, lines });
-    setRawText(linesToRaw(lines));
+    dispatch({ type: "updateDocumentLines", lines });
   };
 
   const handleRawChange = (value: string) => {
-    setRawText(value);
-    if (!document) return;
+    if (!document) {
+      dispatch({ type: "setRawText", rawText: value });
+      return;
+    }
     const parsed = parseRawToLines(value);
-    setDocument({ ...document, lines: parsed });
+    dispatch({ type: "setRawText", rawText: value, lines: parsed });
   };
 
   const handleSave = async () => {
@@ -119,11 +213,13 @@ const App = () => {
     const content = rawText;
     try {
       await writeEnvFile(selectedFile.absolutePath, content, { createBackup });
-      setOriginalLines(document.lines);
-      setStatusMessage("File saved.");
+      dispatch({
+        type: "patch",
+        patch: { originalLines: document.lines, statusMessage: "File saved." },
+      });
     } catch (error) {
       const message = error instanceof Error ? error.message : "Save failed";
-      setStatusMessage(message);
+      dispatch({ type: "patch", patch: { statusMessage: message } });
     }
   };
 
@@ -145,7 +241,7 @@ const App = () => {
     groups.find((group) => group.id === selectedGroupId) ?? null;
 
   return (
-    <div className="min-h-screen bg-background text-foreground">
+    <div className="min-h-screen bg-background text-foreground overflow-hidden">
       <header className="flex items-center justify-between border-b border-border px-6 py-4">
         <div>
           <h1 className="text-2xl font-semibold">Env-shelf</h1>
@@ -169,8 +265,8 @@ const App = () => {
         </div>
       </header>
 
-      <div className="flex h-[calc(100vh-84px)]">
-        <aside className="w-72 border-r border-border p-4">
+      <div className="flex h-[calc(100vh-84px)] overflow-hidden">
+        <aside className="w-72 border-r border-border p-4 overflow-x-hidden overflow-y-scroll">
           <div className="mb-4 flex items-center justify-between">
             <h2 className="text-sm font-semibold uppercase tracking-wide text-muted-foreground">
               Projects
@@ -182,8 +278,8 @@ const App = () => {
               <button
                 key={group.id}
                 type="button"
-                onClick={() => setSelectedGroupId(group.id)}
-                className={`w-full rounded-md border px-3 py-2 text-left text-sm transition-colors ${
+                onClick={() => handleSelectGroup(group)}
+                className={`w-full cursor-pointer rounded-md border px-3 py-2 text-left text-sm transition-colors ${
                   selectedGroupId === group.id
                     ? "border-primary/40 bg-muted"
                     : "border-border hover:border-primary/40"
@@ -264,11 +360,24 @@ const App = () => {
               <div className="flex items-center gap-2">
                 <Toggle
                   pressed={createBackup}
-                  onPressedChange={setCreateBackup}
+                  onPressedChange={(value) =>
+                    dispatch({
+                      type: "patch",
+                      patch: { createBackup: value },
+                    })
+                  }
                 >
                   Create backup
                 </Toggle>
-                <Toggle pressed={maskValues} onPressedChange={setMaskValues}>
+                <Toggle
+                  pressed={maskValues}
+                  onPressedChange={(value) =>
+                    dispatch({
+                      type: "patch",
+                      patch: { maskValues: value },
+                    })
+                  }
+                >
                   Mask values
                 </Toggle>
                 <Button
@@ -294,7 +403,12 @@ const App = () => {
               </div>
             ) : null}
 
-            <Tabs value={activeTab} onValueChange={setActiveTab}>
+            <Tabs
+              value={activeTab}
+              onValueChange={(value) =>
+                dispatch({ type: "patch", patch: { activeTab: value } })
+              }
+            >
               <TabsList>
                 <TabsTrigger value="table">Table</TabsTrigger>
                 <TabsTrigger value="raw">Raw</TabsTrigger>
@@ -306,7 +420,12 @@ const App = () => {
                   <Input
                     placeholder="Search by key"
                     value={searchKey}
-                    onChange={(event) => setSearchKey(event.target.value)}
+                    onChange={(event) =>
+                      dispatch({
+                        type: "patch",
+                        patch: { searchKey: event.target.value },
+                      })
+                    }
                     className="max-w-sm"
                   />
                   <Button
@@ -336,7 +455,12 @@ const App = () => {
                             if (!document) return;
                             const newKey = event.target.value;
                             if (newKey.trim() === "") {
-                              setStatusMessage("Key cannot be empty.");
+                              dispatch({
+                                type: "patch",
+                                patch: {
+                                  statusMessage: "Key cannot be empty.",
+                                },
+                              });
                               return;
                             }
                             const withoutOld = removeKvKey(
