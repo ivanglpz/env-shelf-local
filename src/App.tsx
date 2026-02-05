@@ -4,6 +4,8 @@ import { Input } from "@/components/ui/input";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Textarea } from "@/components/ui/textarea";
 import { Toggle } from "@/components/ui/toggle";
+
+import { Switch } from "@/components/ui/switch";
 import {
   diffKv,
   findDuplicateKeys,
@@ -22,7 +24,6 @@ import {
 import type { EnvDocument, EnvFileRef, EnvLine, ProjectGroup } from "@/types";
 import { open } from "@tauri-apps/api/dialog";
 import * as React from "react";
-
 const LOCAL_STORAGE_KEY = "envshelf:lastRoot";
 
 type ScanState = "idle" | "scanning" | "done" | "error";
@@ -142,10 +143,13 @@ const App = () => {
     statusMessage,
   } = state;
 
+  const getEnvFileButtonClassName = (isSelected: boolean) =>
+    isSelected
+      ? "cursor-pointer rounded-md bg-neutral-700 border px-3 py-2 text-left text-sm transition-colors border-primary/40 bg-muted"
+      : "cursor-pointer rounded-md border px-3 py-2 text-left text-sm transition-colors border-border hover:border-primary/40";
+
   React.useEffect(() => {
     const stored = localStorage.getItem(LOCAL_STORAGE_KEY);
-    console.log(stored);
-
     if (stored) {
       dispatch({ type: "patch", patch: { rootPath: stored } });
     }
@@ -303,11 +307,11 @@ const App = () => {
               <h2 className="text-lg font-semibold">
                 {selectedGroup?.name ?? "No group selected"}
               </h2>
-              <p className="text-sm text-muted-foreground">
+              {/* <p className="text-sm text-muted-foreground">
                 {selectedGroup
                   ? selectedGroup.rootPath
                   : "Select a group to see its files."}
-              </p>
+              </p> */}
             </div>
             <div className="text-sm text-muted-foreground">{statusMessage}</div>
           </div>
@@ -327,11 +331,9 @@ const App = () => {
                   key={file.id}
                   type="button"
                   onClick={() => handleOpenFile(file)}
-                  className={`rounded-md border px-3 py-2 text-left text-sm transition-colors ${
-                    selectedFile?.id === file.id
-                      ? "border-primary/40 bg-muted"
-                      : "border-border hover:border-primary/40"
-                  }`}
+                  className={getEnvFileButtonClassName(
+                    selectedFile?.id === file.id,
+                  )}
                 >
                   <div className="flex items-center justify-between">
                     <span>{file.fileName}</span>
@@ -351,11 +353,11 @@ const App = () => {
             <div className="mb-4 flex items-center justify-between">
               <div>
                 <h3 className="text-lg font-semibold">Editor</h3>
-                <p className="text-sm text-muted-foreground">
+                {/* <p className="text-sm text-muted-foreground">
                   {selectedFile
                     ? selectedFile.absolutePath
                     : "Select an env file to edit."}
-                </p>
+                </p> */}
               </div>
               <div className="flex items-center gap-2">
                 <Toggle
@@ -369,17 +371,19 @@ const App = () => {
                 >
                   Create backup
                 </Toggle>
-                <Toggle
-                  pressed={maskValues}
-                  onPressedChange={(value) =>
-                    dispatch({
-                      type: "patch",
-                      patch: { maskValues: value },
-                    })
-                  }
-                >
-                  Mask values
-                </Toggle>
+                <section className="flex flex-row items-center gap-2">
+                  <p>{maskValues ? "Hide" : "Show"} values</p>
+                  <Switch
+                    checked={maskValues}
+                    onCheckedChange={(value) => {
+                      dispatch({
+                        type: "patch",
+                        patch: { maskValues: value },
+                      });
+                    }}
+                  ></Switch>
+                </section>
+
                 <Button
                   variant="outline"
                   onClick={handleRevert}
