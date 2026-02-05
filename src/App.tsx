@@ -382,13 +382,13 @@ const App = () => {
               </div>
               <div className="flex items-center gap-2">
                 <section className="flex flex-row items-center gap-2">
-                  <p>{maskValues ? "Hide" : "Show"} values</p>
+                  <p>Show values</p>
                   <Switch
-                    checked={maskValues}
+                    checked={!maskValues}
                     onCheckedChange={(value) => {
                       dispatch({
                         type: "patch",
-                        patch: { maskValues: value },
+                        patch: { maskValues: !value },
                       });
                     }}
                   ></Switch>
