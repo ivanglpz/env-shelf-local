@@ -22,6 +22,7 @@ import {
 } from "@/lib/tauri";
 import type { EnvDocument, EnvFileRef, EnvLine, ProjectGroup } from "@/types";
 import { open } from "@tauri-apps/api/dialog";
+import { FolderOpen, Plus, Save, Trash2 } from "lucide-react";
 import * as React from "react";
 const LOCAL_STORAGE_KEY = "envshelf:lastRoot";
 
@@ -257,7 +258,14 @@ const App = () => {
             Elige una carpeta para encontrar y editar tus archivos .env.
           </p>
           <div className="mt-6">
-            <Button onClick={handleSelectFolder}>Select folder</Button>
+            <Button
+              onClick={handleSelectFolder}
+              aria-label="Select folder"
+              title="Select folder"
+              className="h-9 w-9 p-0"
+            >
+              <FolderOpen className="h-4 w-4" />
+            </Button>
           </div>
         </div>
       </div>
@@ -279,7 +287,14 @@ const App = () => {
               Cancel scan
             </Button>
           ) : (
-            <Button onClick={handleSelectFolder}>Select folder</Button>
+            <Button
+              onClick={handleSelectFolder}
+              aria-label="Select folder"
+              title="Select folder"
+              className="h-9 w-9 p-0"
+            >
+              <FolderOpen className="h-4 w-4" />
+            </Button>
           )}
           {rootPath ? (
             <div className="rounded-md border border-border px-3 py-2 text-xs text-muted-foreground">
@@ -372,7 +387,7 @@ const App = () => {
           <section className="rounded-lg border border-border bg-card p-4 shadow-sm">
             <div className="mb-4 flex items-center justify-between">
               <div>
-                <h3 className="text-lg font-semibold">Editor</h3>
+                <h3 className="text-lg font-semibold">Variables</h3>
               </div>
               <div className="flex items-center gap-2">
                 <section className="flex flex-row items-center gap-2">
@@ -411,8 +426,9 @@ const App = () => {
                   variant="accent"
                   onClick={handleSave}
                   disabled={!selectedFile}
-                  className="bg-green-500 text-black"
+                  className="inline-flex items-center gap-2 bg-green-500 text-black"
                 >
+                  <Save className="h-4 w-4" />
                   Save
                 </Button>
               </div>
@@ -458,7 +474,9 @@ const App = () => {
                       );
                     }}
                     disabled={!document}
+                    className="inline-flex items-center gap-2"
                   >
+                    <Plus className="h-4 w-4" />
                     Add variable
                   </Button>
                 </div>
@@ -467,15 +485,15 @@ const App = () => {
                   {filteredKvLines.map((line, index) =>
                     line.kind === "kv" ? (
                       <div
-                        key={`${line.key}-${index}`}
+                        key={index}
                         className="grid grid-cols-[1fr_2fr_auto] items-center gap-3"
                       >
                         <Input
                           value={line.key}
                           onChange={(event) => {
                             if (!document) return;
-                            const newKey = event.target.value;
-                            if (newKey.trim() === "") {
+                            const rawKey = event.target.value;
+                            if (rawKey.trim() === "") {
                               dispatch({
                                 type: "patch",
                                 patch: {
@@ -484,12 +502,13 @@ const App = () => {
                               });
                               return;
                             }
-                            const withoutOld = removeKvKey(
-                              document.lines,
-                              line.key,
-                            );
+                            const newKey = rawKey.toUpperCase().replace(/\s+/g, "_");
                             updateDocumentLines(
-                              updateLinesWithKv(withoutOld, newKey, line.value),
+                              document.lines.map((currentLine) =>
+                                currentLine === line
+                                  ? { ...currentLine, key: newKey, raw: undefined }
+                                  : currentLine,
+                              ),
                             );
                           }}
                         />
@@ -509,6 +528,9 @@ const App = () => {
                         />
                         <Button
                           variant="ghost"
+                          aria-label={`Remove ${line.key}`}
+                          title={`Remove ${line.key}`}
+                          className="h-9 w-9 p-0"
                           onClick={() => {
                             if (!document) return;
                             updateDocumentLines(
@@ -516,7 +538,7 @@ const App = () => {
                             );
                           }}
                         >
-                          Remove
+                          <Trash2 className="h-4 w-4" />
                         </Button>
                       </div>
                     ) : null,
