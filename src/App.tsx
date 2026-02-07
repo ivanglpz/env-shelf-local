@@ -10,6 +10,13 @@ import {
 } from "@/components/ui/dialog";
 import { Input } from "@/components/ui/input";
 import { Toaster } from "@/components/ui/sonner";
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from "@/components/ui/select";
 import { Switch } from "@/components/ui/switch";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Textarea } from "@/components/ui/textarea";
@@ -22,7 +29,12 @@ import {
   updateLinesWithKv,
 } from "@/lib/env";
 import { type Language, t } from "@/lib/i18n";
-import { cancelScan, readEnvFile, scanEnvFiles, writeEnvFile } from "@/lib/tauri";
+import {
+  cancelScan,
+  readEnvFile,
+  scanEnvFiles,
+  writeEnvFile,
+} from "@/lib/tauri";
 import { appReducer, initialState } from "@/state/reducer";
 import type { EnvFileRef, EnvLine, ProjectGroup } from "@/types";
 import { open } from "@tauri-apps/api/dialog";
@@ -80,7 +92,9 @@ const App = () => {
 
   React.useEffect(() => {
     const storedRoot = localStorage.getItem(LOCAL_STORAGE_KEY);
-    const storedTheme = localStorage.getItem(LOCAL_STORAGE_THEME_KEY) as Theme | null;
+    const storedTheme = localStorage.getItem(
+      LOCAL_STORAGE_THEME_KEY,
+    ) as Theme | null;
     const storedLanguage = localStorage.getItem(
       LOCAL_STORAGE_LANGUAGE_KEY,
     ) as Language | null;
@@ -130,7 +144,9 @@ const App = () => {
         toast.warning(tx("scanEmptyToast"));
       } else {
         toast.success(tx("scanSuccessToast"), {
-          description: tx("scanSuccessDescription", { count: result.groups.length }),
+          description: tx("scanSuccessDescription", {
+            count: result.groups.length,
+          }),
         });
       }
       const firstGroup = result.groups[0];
@@ -138,7 +154,8 @@ const App = () => {
         await handleSelectGroup(firstGroup);
       }
     } catch (error) {
-      const message = error instanceof Error ? error.message : tx("scanErrorToast");
+      const message =
+        error instanceof Error ? error.message : tx("scanErrorToast");
       dispatch({ type: "scanError", message });
       toast.error(tx("scanErrorToast"), { description: message });
     }
@@ -185,14 +202,23 @@ const App = () => {
     if (!document || !selectedFile) return;
     const content = rawText;
     const pendingChanges = diffKv(originalLines, document.lines);
-    const added = pendingChanges.filter((item) => item.change === "added").length;
-    const updated = pendingChanges.filter((item) => item.change === "updated").length;
-    const removed = pendingChanges.filter((item) => item.change === "removed").length;
+    const added = pendingChanges.filter(
+      (item) => item.change === "added",
+    ).length;
+    const updated = pendingChanges.filter(
+      (item) => item.change === "updated",
+    ).length;
+    const removed = pendingChanges.filter(
+      (item) => item.change === "removed",
+    ).length;
     try {
       await writeEnvFile(selectedFile.absolutePath, content, { createBackup });
       dispatch({
         type: "patch",
-        patch: { originalLines: document.lines, statusMessage: tx("fileSavedStatus") },
+        patch: {
+          originalLines: document.lines,
+          statusMessage: tx("fileSavedStatus"),
+        },
       });
       if (pendingChanges.length === 0) {
         toast.message(tx("noChangesToSaveToast"));
@@ -209,7 +235,8 @@ const App = () => {
         });
       }
     } catch (error) {
-      const message = error instanceof Error ? error.message : tx("fileSaveErrorToast");
+      const message =
+        error instanceof Error ? error.message : tx("fileSaveErrorToast");
       dispatch({ type: "patch", patch: { statusMessage: message } });
       toast.error(tx("fileSaveErrorToast"), { description: message });
     }
@@ -241,12 +268,15 @@ const App = () => {
 
   const kvLines = document ? listKvLines(document.lines) : [];
   const filteredKvLines = kvLines.filter((line) =>
-    line.kind === "kv" ? line.key.toLowerCase().includes(searchKey.toLowerCase()) : false,
+    line.kind === "kv"
+      ? line.key.toLowerCase().includes(searchKey.toLowerCase())
+      : false,
   );
   const duplicates = document ? findDuplicateKeys(document.lines) : [];
   const diffItems = document ? diffKv(originalLines, document.lines) : [];
 
-  const selectedGroup = groups.find((group) => group.id === selectedGroupId) ?? null;
+  const selectedGroup =
+    groups.find((group) => group.id === selectedGroupId) ?? null;
 
   const settingsDialog = (
     <Dialog open={settingsOpen} onOpenChange={setSettingsOpen}>
@@ -287,14 +317,20 @@ const App = () => {
 
           <section className="space-y-2">
             <h4 className="text-sm font-semibold">{tx("language")}</h4>
-            <select
+            <Select
               value={language}
-              onChange={(event) => setLanguage(event.target.value as Language)}
-              className="h-9 w-full rounded-md border border-input bg-background px-3 text-sm"
+              onValueChange={(value) => setLanguage(value as Language)}
             >
-              <option value="en">{tx("english")}</option>
-            </select>
-            <p className="text-xs text-muted-foreground">{tx("languageNote")}</p>
+              <SelectTrigger className="h-9 w-full">
+                <SelectValue />
+              </SelectTrigger>
+              <SelectContent>
+                <SelectItem value="en">{tx("english")}</SelectItem>
+              </SelectContent>
+            </Select>
+            <p className="text-xs text-muted-foreground">
+              {tx("languageNote")}
+            </p>
           </section>
 
           <section className="space-y-2">
@@ -321,7 +357,9 @@ const App = () => {
 
           <section className="space-y-2">
             <h4 className="text-sm font-semibold">{tx("projectData")}</h4>
-            <p className="text-xs text-muted-foreground">{tx("forgetFolderHint")}</p>
+            <p className="text-xs text-muted-foreground">
+              {tx("forgetFolderHint")}
+            </p>
             <Button variant="outline" onClick={handleForgetSavedFolder}>
               {tx("forgetFolder")}
             </Button>
@@ -428,7 +466,9 @@ const App = () => {
                   {selectedGroup?.name ?? tx("noGroupSelected")}
                 </h2>
               </div>
-              <div className="text-sm text-muted-foreground">{statusMessage}</div>
+              <div className="text-sm text-muted-foreground">
+                {statusMessage}
+              </div>
             </div>
 
             <section className="mb-8 rounded-lg border border-border bg-card p-4 shadow-sm">
@@ -446,7 +486,9 @@ const App = () => {
                     key={file.id}
                     type="button"
                     onClick={() => handleOpenFile(file)}
-                    className={getEnvFileButtonClassName(selectedFile?.id === file.id)}
+                    className={getEnvFileButtonClassName(
+                      selectedFile?.id === file.id,
+                    )}
                   >
                     <div className="flex items-center justify-between">
                       <span>{file.fileName}</span>
@@ -493,7 +535,11 @@ const App = () => {
                     ></Switch>
                   </section>
 
-                  <Button variant="outline" onClick={handleRevert} disabled={!selectedFile}>
+                  <Button
+                    variant="outline"
+                    onClick={handleRevert}
+                    disabled={!selectedFile}
+                  >
                     {tx("revert")}
                   </Button>
                   <Button
@@ -576,7 +622,9 @@ const App = () => {
                                 });
                                 return;
                               }
-                              const newKey = rawKey.toUpperCase().replace(/\s+/g, "_");
+                              const newKey = rawKey
+                                .toUpperCase()
+                                .replace(/\s+/g, "_");
                               updateDocumentLines(
                                 document.lines.map((currentLine) =>
                                   currentLine === line
@@ -611,7 +659,9 @@ const App = () => {
                             className="h-9 w-9 p-0"
                             onClick={() => {
                               if (!document) return;
-                              updateDocumentLines(removeKvKey(document.lines, line.key));
+                              updateDocumentLines(
+                                removeKvKey(document.lines, line.key),
+                              );
                             }}
                           >
                             <Trash2 className="h-4 w-4" />
@@ -650,12 +700,16 @@ const App = () => {
                                   })
                                 : item.change === "added"
                                   ? tx("added", { after: item.after ?? "" })
-                                  : tx("removed", { before: item.before ?? "" })}
+                                  : tx("removed", {
+                                      before: item.before ?? "",
+                                    })}
                             </div>
                           </div>
                           <Badge
                             variant={
-                              item.change === "removed" ? "warning" : "secondary"
+                              item.change === "removed"
+                                ? "warning"
+                                : "secondary"
                             }
                           >
                             {item.change === "removed"
