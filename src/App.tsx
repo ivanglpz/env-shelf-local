@@ -1,5 +1,4 @@
 import { Badge } from "@/components/ui/badge";
-import { type Theme, useTheme } from "@/components/theme-provider";
 import { Button } from "@/components/ui/button";
 import {
   Dialog,
@@ -10,7 +9,6 @@ import {
   DialogTrigger,
 } from "@/components/ui/dialog";
 import { Input } from "@/components/ui/input";
-import { Toaster } from "@/components/ui/sonner";
 import {
   Select,
   SelectContent,
@@ -18,6 +16,7 @@ import {
   SelectTrigger,
   SelectValue,
 } from "@/components/ui/select";
+import { Toaster } from "@/components/ui/sonner";
 import { Switch } from "@/components/ui/switch";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Textarea } from "@/components/ui/textarea";
@@ -47,7 +46,6 @@ const LOCAL_STORAGE_KEY = "envshelf:lastRoot";
 const LOCAL_STORAGE_LANGUAGE_KEY = "envshelf:language";
 
 const App = () => {
-  const { theme, setTheme } = useTheme();
   const [state, dispatch] = React.useReducer(appReducer, initialState);
   const {
     rootPath,
@@ -271,23 +269,6 @@ const App = () => {
         </DialogHeader>
 
         <div className="space-y-5">
-          <section className="space-y-2">
-            <h4 className="text-sm font-semibold">{tx("theme")}</h4>
-            <Select
-              value={theme}
-              onValueChange={(value) => setTheme(value as Theme)}
-            >
-              <SelectTrigger className="h-9 w-full">
-                <SelectValue />
-              </SelectTrigger>
-              <SelectContent>
-                <SelectItem value="light">{tx("light")}</SelectItem>
-                <SelectItem value="dark">{tx("dark")}</SelectItem>
-                <SelectItem value="system">{tx("system")}</SelectItem>
-              </SelectContent>
-            </Select>
-          </section>
-
           <section className="space-y-2">
             <h4 className="text-sm font-semibold">{tx("language")}</h4>
             <Select

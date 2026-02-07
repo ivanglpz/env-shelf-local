@@ -8,11 +8,6 @@ export const messages = {
     settingsTitle: "Settings",
     settingsDescription: "Customize how Env-shelf looks and behaves.",
 
-    theme: "Theme",
-    light: "Light",
-    dark: "Dark",
-    system: "System",
-
     language: "Language",
     english: "English",
     languageNote: "More languages coming soon.",
