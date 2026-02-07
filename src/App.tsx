@@ -46,6 +46,44 @@ import { toast } from "sonner";
 const LOCAL_STORAGE_KEY = "envshelf:lastRoot";
 const LOCAL_STORAGE_LANGUAGE_KEY = "envshelf:language";
 
+const AppLogo = (props: React.SVGProps<SVGSVGElement>) => (
+  <svg
+    xmlns="http://www.w3.org/2000/svg"
+    viewBox="0 0 256 256"
+    role="img"
+    aria-label="env-shelf icon"
+    {...props}
+  >
+    <defs>
+      <linearGradient id="env-shelf-bg" x1="0%" y1="0%" x2="100%" y2="100%">
+        <stop offset="0%" stopColor="#2a2d32" />
+        <stop offset="100%" stopColor="#111216" />
+      </linearGradient>
+    </defs>
+    <rect
+      x="18"
+      y="18"
+      width="220"
+      height="220"
+      rx="54"
+      fill="url(#env-shelf-bg)"
+      stroke="#f2f2f2"
+      strokeWidth="7"
+    />
+    <circle cx="128" cy="128" r="74" fill="none" stroke="#f2f2f2" strokeWidth="10" />
+    <circle
+      cx="128"
+      cy="128"
+      r="56"
+      fill="none"
+      stroke="#f2f2f2"
+      strokeWidth="7"
+      opacity="0.9"
+    />
+    <circle cx="128" cy="128" r="34" fill="#f2f2f2" />
+  </svg>
+);
+
 const App = () => {
   const { t: tx, i18n } = useTranslation();
   const [state, dispatch] = React.useReducer(appReducer, initialState);
@@ -331,7 +369,10 @@ const App = () => {
         <div className="relative min-h-screen bg-background text-foreground">
           <div className="absolute right-6 top-6">{settingsDialog}</div>
           <div className="mx-auto flex min-h-screen max-w-2xl flex-col items-center justify-center px-6 text-center">
-            <h1 className="text-4xl font-semibold">{tx("appTitle")}</h1>
+            <div className="flex items-center justify-center gap-3">
+              <AppLogo className="h-11 w-11 shrink-0" />
+              <h1 className="text-4xl font-semibold">{tx("appTitle")}</h1>
+            </div>
             <p className="mt-3 text-base text-muted-foreground">
               {tx("emptyStateDescription")}
             </p>
@@ -356,9 +397,12 @@ const App = () => {
     <>
       <div className="min-h-screen bg-background text-foreground overflow-hidden">
         <header className="flex items-center justify-between border-b border-border px-6 py-4">
-          <div>
-            <h1 className="text-2xl font-semibold">{tx("appTitle")}</h1>
-            <p className="text-sm text-muted-foreground">{tx("appSubtitle")}</p>
+          <div className="flex items-center gap-3">
+            <AppLogo className="h-10 w-10 shrink-0" />
+            <div>
+              <h1 className="text-2xl font-semibold">{tx("appTitle")}</h1>
+              <p className="text-sm text-muted-foreground">{tx("appSubtitle")}</p>
+            </div>
           </div>
           <div className="flex items-center gap-3">
             {scanState === "scanning" ? (
