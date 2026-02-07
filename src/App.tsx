@@ -66,7 +66,10 @@ const App = () => {
   } = state;
 
   const [settingsOpen, setSettingsOpen] = React.useState(false);
-  const language = (i18n.resolvedLanguage ?? i18n.language ?? "en") as Language;
+  const currentLanguage = i18n.resolvedLanguage ?? i18n.language;
+  const language = supportedLanguages.includes(currentLanguage as Language)
+    ? (currentLanguage as Language)
+    : "en";
 
   const getEnvFileButtonClassName = (isSelected: boolean) =>
     isSelected
@@ -275,6 +278,10 @@ const App = () => {
               </SelectTrigger>
               <SelectContent>
                 <SelectItem value="en">{tx("english")}</SelectItem>
+                <SelectItem value="es">{tx("spanish")}</SelectItem>
+                <SelectItem value="pt-BR">{tx("portugueseBrazil")}</SelectItem>
+                <SelectItem value="ja">{tx("japanese")}</SelectItem>
+                <SelectItem value="de">{tx("german")}</SelectItem>
               </SelectContent>
             </Select>
             <p className="text-xs text-muted-foreground">
