@@ -28,7 +28,7 @@ import {
   removeKvKey,
   updateLinesWithKv,
 } from "@/lib/env";
-import { type Language, t } from "@/lib/i18n";
+import { supportedLanguages, type Language } from "@/lib/i18n";
 import {
   cancelScan,
   readEnvFile,
@@ -40,12 +40,14 @@ import type { EnvFileRef, EnvLine, ProjectGroup } from "@/types";
 import { open } from "@tauri-apps/api/dialog";
 import { FolderOpen, Plus, Save, Settings, Trash2 } from "lucide-react";
 import * as React from "react";
+import { useTranslation } from "react-i18next";
 import { toast } from "sonner";
 
 const LOCAL_STORAGE_KEY = "envshelf:lastRoot";
 const LOCAL_STORAGE_LANGUAGE_KEY = "envshelf:language";
 
 const App = () => {
+  const { t: tx, i18n } = useTranslation();
   const [state, dispatch] = React.useReducer(appReducer, initialState);
   const {
     rootPath,
@@ -64,13 +66,7 @@ const App = () => {
   } = state;
 
   const [settingsOpen, setSettingsOpen] = React.useState(false);
-  const [language, setLanguage] = React.useState<Language>("en");
-
-  const tx = React.useCallback(
-    (key: Parameters<typeof t>[1], vars?: Record<string, string | number>) =>
-      t(language, key, vars),
-    [language],
-  );
+  const language = (i18n.resolvedLanguage ?? i18n.language ?? "en") as Language;
 
   const getEnvFileButtonClassName = (isSelected: boolean) =>
     isSelected
@@ -79,23 +75,19 @@ const App = () => {
 
   React.useEffect(() => {
     const storedRoot = localStorage.getItem(LOCAL_STORAGE_KEY);
-    const storedLanguage = localStorage.getItem(
-      LOCAL_STORAGE_LANGUAGE_KEY,
-    ) as Language | null;
-
-    if (storedLanguage === "en") {
-      setLanguage(storedLanguage);
+    const storedLanguage = localStorage.getItem(LOCAL_STORAGE_LANGUAGE_KEY);
+    if (
+      storedLanguage &&
+      supportedLanguages.includes(storedLanguage as Language)
+    ) {
+      void i18n.changeLanguage(storedLanguage);
     }
 
     if (storedRoot) {
       dispatch({ type: "patch", patch: { rootPath: storedRoot } });
       void handleScan(storedRoot);
     }
-  }, []);
-
-  React.useEffect(() => {
-    localStorage.setItem(LOCAL_STORAGE_LANGUAGE_KEY, language);
-  }, [language]);
+  }, [i18n]);
 
   const handleSelectFolder = async () => {
     const selected = await open({ directory: true, multiple: false });
@@ -273,7 +265,10 @@ const App = () => {
             <h4 className="text-sm font-semibold">{tx("language")}</h4>
             <Select
               value={language}
-              onValueChange={(value) => setLanguage(value as Language)}
+              onValueChange={(value) => {
+                localStorage.setItem(LOCAL_STORAGE_LANGUAGE_KEY, value);
+                void i18n.changeLanguage(value);
+              }}
             >
               <SelectTrigger className="h-9 w-full">
                 <SelectValue />
