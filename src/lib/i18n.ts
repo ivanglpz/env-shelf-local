@@ -11,6 +11,7 @@ export const messages = {
     theme: "Theme",
     light: "Light",
     dark: "Dark",
+    system: "System",
 
     language: "Language",
     english: "English",

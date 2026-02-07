@@ -1,4 +1,5 @@
 import { Badge } from "@/components/ui/badge";
+import { type Theme, useTheme } from "@/components/theme-provider";
 import { Button } from "@/components/ui/button";
 import {
   Dialog,
@@ -43,21 +44,10 @@ import * as React from "react";
 import { toast } from "sonner";
 
 const LOCAL_STORAGE_KEY = "envshelf:lastRoot";
-const LOCAL_STORAGE_THEME_KEY = "envshelf:theme";
 const LOCAL_STORAGE_LANGUAGE_KEY = "envshelf:language";
 
-type Theme = "light" | "dark";
-
-const applyTheme = (theme: Theme) => {
-  const root = document.documentElement;
-  if (theme === "dark") {
-    root.classList.add("dark");
-  } else {
-    root.classList.remove("dark");
-  }
-};
-
 const App = () => {
+  const { theme, setTheme } = useTheme();
   const [state, dispatch] = React.useReducer(appReducer, initialState);
   const {
     rootPath,
@@ -76,7 +66,6 @@ const App = () => {
   } = state;
 
   const [settingsOpen, setSettingsOpen] = React.useState(false);
-  const [theme, setTheme] = React.useState<Theme>("dark");
   const [language, setLanguage] = React.useState<Language>("en");
 
   const tx = React.useCallback(
@@ -92,19 +81,9 @@ const App = () => {
 
   React.useEffect(() => {
     const storedRoot = localStorage.getItem(LOCAL_STORAGE_KEY);
-    const storedTheme = localStorage.getItem(
-      LOCAL_STORAGE_THEME_KEY,
-    ) as Theme | null;
     const storedLanguage = localStorage.getItem(
       LOCAL_STORAGE_LANGUAGE_KEY,
     ) as Language | null;
-
-    if (storedTheme === "light" || storedTheme === "dark") {
-      setTheme(storedTheme);
-      applyTheme(storedTheme);
-    } else {
-      applyTheme("dark");
-    }
 
     if (storedLanguage === "en") {
       setLanguage(storedLanguage);
@@ -115,11 +94,6 @@ const App = () => {
       void handleScan(storedRoot);
     }
   }, []);
-
-  React.useEffect(() => {
-    applyTheme(theme);
-    localStorage.setItem(LOCAL_STORAGE_THEME_KEY, theme);
-  }, [theme]);
 
   React.useEffect(() => {
     localStorage.setItem(LOCAL_STORAGE_LANGUAGE_KEY, language);
@@ -299,20 +273,19 @@ const App = () => {
         <div className="space-y-5">
           <section className="space-y-2">
             <h4 className="text-sm font-semibold">{tx("theme")}</h4>
-            <div className="flex gap-2">
-              <Button
-                variant={theme === "light" ? "default" : "outline"}
-                onClick={() => setTheme("light")}
-              >
-                {tx("light")}
-              </Button>
-              <Button
-                variant={theme === "dark" ? "default" : "outline"}
-                onClick={() => setTheme("dark")}
-              >
-                {tx("dark")}
-              </Button>
-            </div>
+            <Select
+              value={theme}
+              onValueChange={(value) => setTheme(value as Theme)}
+            >
+              <SelectTrigger className="h-9 w-full">
+                <SelectValue />
+              </SelectTrigger>
+              <SelectContent>
+                <SelectItem value="light">{tx("light")}</SelectItem>
+                <SelectItem value="dark">{tx("dark")}</SelectItem>
+                <SelectItem value="system">{tx("system")}</SelectItem>
+              </SelectContent>
+            </Select>
           </section>
 
           <section className="space-y-2">
